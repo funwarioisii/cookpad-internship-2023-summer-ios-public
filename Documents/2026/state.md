@@ -1,114 +1,159 @@
-# Observationで画面を更新する
+# [Chapter 4 補足] Observation を使って ViewModel の変更を検知する
 
-Chapter 4では、通信で取得したレシピをViewModelに保存し、Viewに表示しました。2026年版でも、この役割分担は同じです。変わるのは、**モデルの変更をSwiftUIが知る仕組み**です。ここでは、2023年版の書き方と比べながら、その違いを見ていきます。
+Chapter 4 では、ViewModel に取得したデータを保持し、そのデータを View に表示しました。
+ここでは、`ObservableObject`を使っていた部分を、iOS 17 から利用できる Observation を使って書く方法を説明します。
 
-## 同じ画面を二つの書き方で比べる
+- `@Observable`を使って property の変更を検知する方法
+- ViewModel のインスタンスを`@State`で保持する方法
+- 一覧と詳細で同じハッシュタグを表示する方法
 
-まず、レシピ名を表示するだけの小さな例で考えましょう。次の二つは比較用のコードなので、それぞれ別に試してください。
+について見ていきましょう。
 
-2023年版では、モデルを `ObservableObject` に準拠させ、変更を通知するプロパティに `@Published` を付けていました。Viewは `@StateObject` でモデルを保持します。
+前半では、Chapter 4 のコードを使って Observation に関する変更だけを説明します。完成サンプルではハッシュタグを共有するための`RecipeStore`も追加しているので、その部分は後半で説明します。
+
+## ObservableObject から Observable に変更する
+
+### RecipeListViewModel
+
+まず、Chapter 4 で作成した`RecipeListViewModel`を見てみましょう。API 通信の部分を省略すると、以下のようになっていました。
 
 ```swift
-import SwiftUI
-
 @MainActor
-final class RecipeModel: ObservableObject {
-    @Published var title = "オムライス"
-    @Published var isLoading = false
+final class RecipeListViewModel: ObservableObject {
+    @Published var items: [RecipeListItem] = []
 }
+```
 
-struct RecipeView: View {
-    @StateObject private var model = RecipeModel()
+`ObservableObject` protocol に準拠し、`items` property に`@Published`属性を付けることで、View から変更を監視できるようにしていました。
 
-    var body: some View {
-        Text(model.title)
+Observation を使う場合は、`import Observation`を追加した上で、以下のように変更します。
+
+```diff
+ @MainActor
+-final class RecipeListViewModel: ObservableObject {
+-    @Published var items: [RecipeListItem] = []
++@Observable
++final class RecipeListViewModel {
++    var items: [RecipeListItem] = []
+ }
+```
+
+`ObservableObject`への準拠を外し、クラスに`@Observable`を付けました。これにより、`items`に`@Published`を付けなくても、property の読み取りや変更を追跡できるようになります。
+
+ここで追加した`@Observable`はマクロです。Chapter 4 では`@Published`などを Property Wrapper として説明しましたが、`@`で始まるものが全て Property Wrapper というわけではありません。今回はマクロの実装については割愛します。
+
+### State
+
+次に、View 側の書き方を見てみましょう。Chapter 4 では、ViewModel を`RecipeListView`内で作成するために`@StateObject`を使っていました。
+
+`@Observable`を付けたクラスの場合は、以下のように`@State`を使います。
+
+```diff
+ struct RecipeListView: View {
+-    @StateObject private var viewModel = RecipeListViewModel()
++    @State private var viewModel = RecipeListViewModel()
+```
+
+View の`body`では、これまでと同じように`viewModel.items`を使うことができます。
+
+```swift
+List(viewModel.items) { item in
+    RecipeListRow(item: item)
+}
+```
+
+これで、`items` property にサンプルデータや API から取得したデータを代入すると、一覧の表示も更新されるようになります。
+
+では、`@Observable`を付けていても、なぜ`@State`が必要なのでしょうか。
+
+Chapter 3 で説明したように、View の struct のインスタンスは、画面の更新に伴って作り直されます。`@State`を使うことで、同じ Identity の View が存続している間、SwiftUI が管理するストレージに ViewModel のインスタンスを保持できます。
+
+`@Observable`は property の変更を追跡するための仕組みであり、インスタンスを保持するための仕組みではありません。以前`@StateObject`を使っていた箇所でも、Observation ではこの二つの役割を分けて考えます。
+
+## どの property の変更で View が更新されるのか
+
+ここまでは、属性を付け替えただけのように見えるかもしれません。では、変更を検知する仕組みにはどのような違いがあるのでしょうか。
+
+ViewModel に、読み込み中かどうかを表す`isLoading` property がある場合を考えてみましょう。
+
+```swift
+// ObservableObject を使う場合
+@Published var items: [RecipeListItem] = []
+@Published var isLoading = false
+```
+
+`ObservableObject`を使う場合は、どちらの`@Published` property の変更も、そのオブジェクトを監視する View への通知になります。View が`items`しか表示していなくても、`isLoading`の変更は`body`が再び実行されるきっかけになります。
+
+一方、Observation では、SwiftUI が`body`を実行した際に**実際に読んだ property**を追跡します。先程の`List(viewModel.items)`だけを表示している場合は、`items`の変更を追跡します。`isLoading`だけが変わっても、その変更によってこの View を更新する必要はありません。
+
+それでは、読み込み中の表示も追加したらどうでしょうか。
+
+```swift
+VStack {
+    if viewModel.isLoading {
+        ProgressView()
+    }
+    List(viewModel.items) { item in
+        RecipeListRow(item: item)
     }
 }
 ```
 
-この書き方では、`title` と `isLoading` のどちらの変更も、モデルからViewへの通知になります。Viewが表示に使っていない `isLoading` の変更も、`body` を再評価するきっかけになります。
+今度は`if`の条件で`isLoading`を読んでいるため、この property の変更も追跡されます。つまり、Observation を使うと、View が表示に使っている property に応じて、変更を検知できるようになります。
 
-Observationを使う場合は、モデルに `@Observable` を付け、Viewでは `@State` で保持します。各プロパティの `@Published` は不要です。
+(なお、親 View の更新など、他の理由で`body`が実行されることもあります。また、`body`が実行されることと、画面全体が描き直されることは同じではありません。)
+
+## 他の View に ViewModel を渡す
+
+ViewModel を作成する側では`@State`を使いました。では、既に作成された ViewModel を受け取る側はどう書けばよいのでしょうか。
+
+表示するだけであれば、通常の property として受け取ることができます。
 
 ```swift
-import SwiftUI
-import Observation
-
-@MainActor
-@Observable
-final class RecipeModel {
-    var title = "オムライス"
-    var isLoading = false
-}
-
-struct RecipeView: View {
-    @State private var model = RecipeModel()
+struct RecipeCountView: View {
+    let viewModel: RecipeListViewModel
 
     var body: some View {
-        Text(model.title)
+        Text("レシピ数: \(viewModel.items.count)")
     }
 }
 ```
 
-SwiftUIは `body` の実行中に、どのプロパティが読まれたかを記録します。この例で読んでいるのは `title` だけです。そのため、`title` が変わると表示の更新が必要だとわかります。一方、`isLoading` だけが変わっても、ObservationによってこのViewの更新が必要になることはありません。
+この場合も、`body`で`items`を読むことで変更が追跡されます。`ObservableObject`を受け取る時に使っていた`@ObservedObject`は必要ありません。
 
-では、`body` に次の表示も加えたらどうでしょうか。
+### Bindable
 
-```swift
-if model.isLoading {
-    ProgressView()
-}
-```
+一方、Chapter 6 の入力画面では、ユーザーが入力した値を ViewModel に書き戻す必要があります。
+`TextField`に渡す Binding を作るために、`@Bindable`を使ってみましょう。
 
-条件を判定するために `isLoading` を読むようになるので、その変更も更新のきっかけになります。**モデル単位で変更の通知を受ける書き方から、表示に使ったプロパティの変更を追う書き方になった**、という違いです。なお、親Viewの更新など、Observation以外の理由で `body` が実行されることもあります。`body` の再評価が、そのまま画面全体の描き直しを意味するわけではありません。
-
-## `@Observable` があっても `@State` を使う理由
-
-`@Observable` と `@State` は、それぞれ役割が違います。
-
-`@Observable` は、プロパティの読み取りや変更を追跡できるようにするマクロです。モデルのインスタンスを保存しておく機能ではありません。
-
-SwiftUIのViewは構造体で、表示の更新に伴って作り直されます。画面の中で作ったモデルを `@State` に入れておくと、同じ画面として扱われている間、SwiftUIがモデルを保持してくれます。Viewが作り直されるたびに、入力や取得済みのデータを失わずに済みます。この役割は、以前 `@StateObject` が担っていたものです。
-
-一方、親が保持しているモデルを子に渡して表示するだけなら、通常のプロパティで受け取れます。
+以下は、完成サンプルの`AddRecipeHashtagsView`の`body`から抜粋したものです。
 
 ```swift
-struct RecipeTitleView: View {
-    let model: RecipeModel
-
-    var body: some View {
-        Text(model.title)
-    }
-}
+@Bindable var model = viewModel
+TextField("#タグ1 #タグ2（スペース区切り）", text: $model.text, axis: .vertical)
 ```
 
-ここでも `body` が `title` を読むので、その変更は追跡されます。以前のように、受け取る側に `@ObservedObject` を付ける必要はありません。
+`$model.text`を渡すことで、TextField が ViewModel の`text`を読み書きできるようになります。ここで新しい ViewModel を作っているわけではありません。View が`@State`で保持しているインスタンスに対して、Binding を作っています。
 
-## 入力欄につなぐときは `@Bindable`
+## 一覧と詳細でハッシュタグを共有する
 
-`TextField` は、現在の値を読むだけでなく、入力された値をモデルへ書き戻します。そのために必要なのが `Binding` です。`@Observable` なモデルからBindingを作るときは、`@Bindable` を使います。
+ここからは完成サンプルの実装を見ていきます。
 
-```swift
-struct RecipeTitleEditor: View {
-    @Bindable var model: RecipeModel
+Chapter 6 では、ハッシュタグ追加画面を閉じた後に、詳細画面へ追加したハッシュタグを表示しました。一覧に戻った時にも同じハッシュタグを表示するには、どうすればよいでしょうか。
 
-    var body: some View {
-        TextField("レシピ名", text: $model.title)
-    }
-}
-```
+一覧と詳細がそれぞれハッシュタグの配列を持っていると、詳細側だけを更新しても一覧には反映されません。そこで今回は、ハッシュタグを保持する`RecipeStore`というクラスを作り、一覧と詳細から同じインスタンスを参照することにします。
 
-`$model.title` が、モデルの `title` と入力欄をつなぎます。`@Bindable` を付けても別のモデルを作るわけではなく、親から受け取ったインスタンスを編集します。
+これは画面間でデータを共有するための設計で、Observation を使うために必ず必要なものではありません。
 
-整理すると、モデルを画面内に保持するための `@State`、受け取って読むだけなら通常のプロパティ、入力欄へBindingを渡すための `@Bindable`、と使い分けます。これらをすべてのViewに付ける必要はありません。
+### RecipeStore の受け渡し
 
-## このアプリでは、なぜ一覧のタグも更新されるのか
+[MiniCookpadApp.swift](../../MiniCookpad/MiniCookpadApp.swift) を開いてみましょう。アプリ側で一つの RecipeStore を作成し、View に引数として渡しています。View は受け取った Store を ViewModel の初期化時にも渡します。
 
-完成サンプルではObservationへの移行に加え、**一覧と詳細が同じタグのデータを使う**ように設計を変えています。これはObservationを使うための必須条件ではなく、画面間でタグの表示が食い違うのを防ぐための変更です。
+一方、読み込み中かどうかやエラーメッセージなどは、画面ごとに異なるため、それぞれの ViewModel に保持します。
 
-アプリの起動時に一つの `RecipeStore` を作り、一覧・詳細・タグ追加の各画面へ渡します。タグは、このStoreの `hashtagsByRecipeID` にレシピIDごとに保存します。各画面の読み込み状況やエラーメッセージは、その画面のViewModelに持たせます。
+### `items` property
 
-[RecipeListViewModel](../../MiniCookpad/View/RecipeList/RecipeListViewModel.swift) の `items` は、取得したレシピとStoreのタグを組み合わせる計算プロパティです。
+次に、完成サンプルの [RecipeListViewModel.swift](../../MiniCookpad/View/RecipeList/RecipeListViewModel.swift) を見てみましょう。前半の例と異なり、`items`は以下のような計算プロパティになっています。
 
 ```swift
 var items: [RecipeListItem] {
@@ -118,31 +163,20 @@ var items: [RecipeListItem] {
 }
 ```
 
-一覧の `body` が `items` を読むと、この計算の中で `recipes` と `store.hashtagsByRecipeID` も読まれます。ViewModelとStoreはどちらも `@Observable` なので、SwiftUIはこの読み取りも追跡できます。計算プロパティの結果を別途 `@Published` に保存し直す必要はありません。
+レシピのデータは`recipes`、ハッシュタグは Store の`hashtagsByRecipeID`から取得して、表示する項目を作っています。
 
-タグを追加すると、次の順に表示へ反映されます。
+View が`items`を読むと、この計算の中で`recipes`と`hashtagsByRecipeID`も読まれます。ViewModel と Store はどちらも`@Observable`を付けたクラスなので、この読み取りも追跡されます。計算プロパティを経由していても、元になったデータの変更を検知できるということです。
 
-1. タグ追加画面がStoreへ保存を依頼します。
-2. 通信が成功したら、Storeが返ってきたタグを `hashtagsByRecipeID` に追加します。
-3. 同じStoreのタグを読んでいる一覧と詳細で、更新後の内容が表示されます。
+ハッシュタグの追加に成功すると、Store の`hashtagsByRecipeID`が更新されます。同じ Store の値を使っている一覧と詳細も、この変更に応じて表示が更新されます。
 
-ここで追跡するのは `hashtagsByRecipeID` という辞書のプロパティです。レシピIDごとに別々のプロパティとして追跡しているわけではありません。
+ここで、画面ごとに別の Store を作った場合を考えてみてください。`@Observable`が付いていても、別のインスタンスに入っているデータまで同じ値になるわけではありません。**同じ Store を渡すことでデータを共有し、Observation を使ってその変更を表示に反映している**、という関係になります。
 
-もし一覧と詳細で別々のStoreを作ったら、片方を更新しても、もう片方のデータは変わりません。**同じデータを渡すのがStoreを共有する設計、データの変更を表示につなぐのがObservation**です。この二つを分けて理解しましょう。
+(追跡する単位は`hashtagsByRecipeID`という辞書の property です。辞書の中のレシピ ID ごとに、別々の property として追跡しているわけではありません。)
 
-## 通信処理との関係
+ここまで読めたら、完成サンプルでハッシュタグを追加し、一覧へ戻ってみましょう。再取得をしなくても追加したハッシュタグが表示されていれば OK です。[RecipeListView](../../MiniCookpad/View/RecipeList/RecipeListView.swift) から [RecipeStore](../../MiniCookpad/Library/RecipeStore.swift) まで、同じインスタンスが渡されていることも確認してみてください。
 
-通信には待ち時間があるため、ViewModelにはデータだけでなく、読み込み中かどうかやエラーメッセージも持たせます。一覧では取得前・読み込み中・空の結果・失敗を区別し、失敗したら再試行できるようにしています。キャンセルは利用者に通信エラーとして表示しません。
+## [補足] MainActor との違い
 
-モデルの `@MainActor` は、これらの状態へアクセスする場所を揃える指定です。Observationとは別の仕組みです。通信待ちとMainActorの関係は [Swift 6で通信を扱う](concurrency.md) で説明します。
+ViewModel には`@Observable`と`@MainActor`の両方を付けています。`@Observable`が property の変更を追跡する仕組みであるのに対し、`@MainActor`は、そのデータを扱う処理を MainActor 上で実行するための指定です。通信との関係は [Swift 6 と API 通信の補足](concurrency.md) で説明します。
 
-実装を読むときは、[MiniCookpadApp](../../MiniCookpad/MiniCookpadApp.swift) でStoreを作る箇所から、[一覧画面](../../MiniCookpad/View/RecipeList/RecipeListView.swift)、ViewModel、[RecipeStore](../../MiniCookpad/Library/RecipeStore.swift) の順に追ってみてください。Storeを作るときに通信クライアントも渡すので、テストでは通信の結果を自由に変えられます。
-
-## 確かめてみよう
-
-- 小さな例の `body` にブレークポイントを置き、`title` と `isLoading` を変更したときの違いを比べてみましょう。次に `ProgressView` の条件を加えて、`isLoading` の変更も表示に使われることを確かめてください。
-- タグを追加した後で一覧に戻り、再取得を呼び出さなくても追加したタグが表示されることを確認しましょう。どの画面が同じStoreを受け取っているか、コードで追ってみてください。
-
-ObservationはiOS 17以降で利用できます。`ObservableObject` を使う既存コードをすべて書き換える必要はありません。この教材では、iOS 17以降を対象に新しく実装する方法として採用しています。
-
-参考: Appleの [Observationへの移行ガイド](https://developer.apple.com/documentation/swiftui/migrating-from-the-observable-object-protocol-to-the-observable-macro)、[Discover Observation in SwiftUI](https://developer.apple.com/videos/play/wwdc2023/10149/)
+Observation について詳しく知りたい方は、Apple の [移行ガイド](https://developer.apple.com/documentation/swiftui/migrating-from-the-observable-object-protocol-to-the-observable-macro) や [Discover Observation in SwiftUI](https://developer.apple.com/videos/play/wwdc2023/10149/) も見てみてください。`ObservableObject`も引き続き利用できますが、今回は iOS 17 以降を対象に Observation を使っています。
