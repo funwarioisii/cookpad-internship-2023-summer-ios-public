@@ -1,104 +1,148 @@
-# Observation・依存の受け渡し・非同期処理
+# Observationで画面を更新する
 
-対応ファイル:
-- [RecipeListViewModel.swift](../../MiniCookpad/View/RecipeList/RecipeListViewModel.swift)
-- [RecipeStore.swift](../../MiniCookpad/Library/RecipeStore.swift)
-- [APIClient.swift](../../MiniCookpad/Networking/APIClient/APIClient.swift)
-- [MiniCookpadApp.swift](../../MiniCookpad/MiniCookpadApp.swift)
+Chapter 4では、通信で取得したレシピをViewModelに保存し、Viewに表示しました。2026年版でも、この役割分担は同じです。変わるのは、**モデルの変更をSwiftUIが知る仕組み**です。ここでは、2023年版の書き方と比べながら、その違いを見ていきます。
 
-このページはChapter 4の2026年版の差分です。元の教材本文は残し、置き換える状態管理と通信の説明をここにまとめます。Swift 6の設定については [通信の変更点](concurrency.md) も参照してください。
+## 同じ画面を二つの書き方で比べる
 
-## View・ViewModel・Storeの役割
+まず、レシピ名を表示するだけの小さな例で考えましょう。次の二つは比較用のコードなので、それぞれ別に試してください。
 
-この教材では、Viewは表示と操作、ViewModelはその画面の読み込み状態、Storeは画面間で共有するタグとAPI通信を担当します。大きなアーキテクチャの採用を前提にせず、「どこが状態を所有するか」を明示するための分割です。
-
-一覧と詳細が同じレシピのタグを別々に持つと、片方だけ更新される原因になります。`MiniCookpadApp` が一つの `RecipeStore` を所有し、各画面へ引数で渡します。APIクライアントもStoreの初期化時に渡します。
+2023年版では、モデルを `ObservableObject` に準拠させ、変更を通知するプロパティに `@Published` を付けていました。Viewは `@StateObject` でモデルを保持します。
 
 ```swift
-let store = RecipeStore(client: StubAPIClient())
-let model = RecipeListViewModel(store: store)
-```
+import SwiftUI
 
-実API・サンプルAPI・テスト用APIを、利用する場所で差し替えられます。グローバルな `apiClient` は作りません。
-
-## Observation
-
-`RecipeListViewModel` は `@Observable` なクラスです。
-
-```swift
 @MainActor
-@Observable
-final class RecipeListViewModel {
-    let store: RecipeStore
-    private var recipes: [GetRecipeListResponse.Recipe] = []
-    private(set) var isLoading = false
-    private(set) var hasLoaded = false
-    private(set) var errorMessage: String?
+final class RecipeModel: ObservableObject {
+    @Published var title = "オムライス"
+    @Published var isLoading = false
+}
 
-    var items: [RecipeListItem] {
-        recipes.map {
-            .init(recipe: $0, hashtags: store.hashtagsByRecipeID[$0.id, default: []])
-        }
+struct RecipeView: View {
+    @StateObject private var model = RecipeModel()
+
+    var body: some View {
+        Text(model.title)
     }
-    // initとrequest()は対応ファイルを参照。
 }
 ```
 
-SwiftUIはbodyの評価で実際に読んだObservableプロパティへの依存を追跡します。`items` の計算で読まれるStoreのタグも対象です。このためStoreのタグが変わると、各画面の表示へ反映されます。
+この書き方では、`title` と `isLoading` のどちらの変更も、モデルからViewへの通知になります。Viewが表示に使っていない `isLoading` の変更も、`body` を再評価するきっかけになります。
 
-| 用途 | 使用する仕組み |
-| --- | --- |
-| Viewがモデルを所有する | `@State` |
-| 親から受け取ったモデルを読む | 通常のプロパティ |
-| モデルの値へのBindingを作る | `@Bindable` |
-| View階層にモデルを渡す | `.environment(model)` と `@Environment(Model.self)` |
-
-完成版は依存関係を追いやすいよう引数渡しを使います。Environmentは、階層が深くなったときの発展課題です。
-
-`@Observable` はマクロです。`@State` などと見た目が似ていても、`@` の付く機能をすべてProperty Wrapperと考えないでください。2023年の `ObservableObject`・`@Published`・`@StateObject`・`@ObservedObject` を使うコードは、古いOSをサポートするコードを読む際に学べます。
-
-## MainActorとSwift 6
-
-UIの可変状態は `@MainActor` で隔離します。ViewModelだけでなく、この小規模な教材ではStoreとAPIClientの操作もMainActorで行います。APIClientはMainActor隔離に加えて `Sendable` な契約を持ち、`async let` の子タスクから安全に参照できます。リクエストとレスポンスもSendableな値型にします。
-
-ここで `async` は「バックグラウンドスレッドで実行する」の意味ではありません。`URLSession.data(for:)` の通信待ちではタスクを中断できるため、MainActor上から呼び出しても通信待ちの間UIを占有しません。一方、大量のJSON変換など同期処理が重ければMainActorを占有します。プロファイルしたうえで、必要な仕事を `@concurrent` な関数や別actorに移すのが発展課題です。
-
-このプロジェクトはSwift 6モードとApproachable Concurrencyを有効にし、既定の隔離はnonisolatedに固定しています。Approachable Concurrencyではnonisolated asyncが呼び出し元のactorを引き継ぐ設定が含まれます。Default Actor Isolationとは別の設定です。警告を消すために `@unchecked Sendable` を追加するのではなく、可変状態を誰が保護するかを考えます。
-
-## 順番に待つ場合・同時に待つ場合
-
-一覧では、まずレシピを取得し、そのIDを使ってタグを取得します。後のリクエストが前の結果に依存するため、順番に待ちます。空の一覧ならタグAPIは呼びません。
-
-詳細とタグはレシピIDさえあれば取得できるので、次のように同時に待てます。
+Observationを使う場合は、モデルに `@Observable` を付け、Viewでは `@State` で保持します。各プロパティの `@Published` は不要です。
 
 ```swift
-async let detail = client.send(request: GetRecipeDetailRequest(recipeId: id))
-async let tags = client.send(request: GetRecipeHashtagsRequest(recipeIds: [id]))
-let (detailResponse, tagsResponse) = try await (detail, tags)
-try Task.checkCancellation()
+import SwiftUI
+import Observation
+
+@MainActor
+@Observable
+final class RecipeModel {
+    var title = "オムライス"
+    var isLoading = false
+}
+
+struct RecipeView: View {
+    @State private var model = RecipeModel()
+
+    var body: some View {
+        Text(model.title)
+    }
+}
 ```
 
-`async let` は構造化された子タスクです。`Task {}` で新しいタスクを作る場合と、寿命・キャンセルの関係が異なります。ボタン操作をasync処理へつなぐときは `Task {}` を使いますが、処理を誰が完了まで管理するかも決めます。
+SwiftUIは `body` の実行中に、どのプロパティが読まれたかを記録します。この例で読んでいるのは `title` だけです。そのため、`title` が変わると表示の更新が必要だとわかります。一方、`isLoading` だけが変わっても、ObservationによってこのViewの更新が必要になることはありません。
 
-## loading・empty・error・cancelled
+では、`body` に次の表示も加えたらどうでしょうか。
 
-`request()` は重複した読み込みを防ぎ、開始時にisLoadingを設定し、`defer` で必ず解除します。
+```swift
+if model.isLoading {
+    ProgressView()
+}
+```
 
-- 成功: レシピを保持してhasLoadedをtrueにする。
-- 空: 成功した空配列として、空状態の説明を表示する。
-- 失敗: 利用者向けの説明と再試行を表示する。以前のデータがある場合は保持する。
-- キャンセル: エラーとして表示せず、不要な結果を適用しない。
+条件を判定するために `isLoading` を読むようになるので、その変更も更新のきっかけになります。**モデル単位で変更の通知を受ける書き方から、表示に使ったプロパティの変更を追う書き方になった**、という違いです。なお、親Viewの更新など、Observation以外の理由で `body` が実行されることもあります。`body` の再評価が、そのまま画面全体の描き直しを意味するわけではありません。
 
-APIClientではURLSessionのキャンセルを通常の接続エラーで包まないようにします。Storeは各GETの待機後にもキャンセルを確認します。`.task` のキャンセルだけで、以後の同期処理が自動で停止するわけではありません。
+## `@Observable` があっても `@State` を使う理由
 
-タグAPIの結果は `zip` で結合せず、レシピIDで対応付けます。返却順が変わったりタグのないレシピが省略されたりしても、一覧の行を落とさないためです。
+`@Observable` と `@State` は、それぞれ役割が違います。
 
-## 演習
+`@Observable` は、プロパティの読み取りや変更を追跡できるようにするマクロです。モデルのインスタンスを保存しておく機能ではありません。
 
-- 一覧と詳細が同じStoreを参照する経路を追う。
-- `request()` の成功・空・失敗・キャンセルの分岐を確認する。
-- グローバルapiClientを参照していた箇所が、初期化時に渡す依存へ変わったことを確認する。
+SwiftUIのViewは構造体で、表示の更新に伴って作り直されます。画面の中で作ったモデルを `@State` に入れておくと、同じ画面として扱われている間、SwiftUIがモデルを保持してくれます。Viewが作り直されるたびに、入力や取得済みのデータを失わずに済みます。この役割は、以前 `@StateObject` が担っていたものです。
 
-参考: [Observationへの移行](https://developer.apple.com/documentation/swiftui/migrating-from-the-observable-object-protocol-to-the-observable-macro)、[Swift 6.2の並行処理](https://www.swift.org/blog/swift-6.2-released/)
+一方、親が保持しているモデルを子に渡して表示するだけなら、通常のプロパティで受け取れます。
 
-[元のChapter 5](../chapter_05.md)
+```swift
+struct RecipeTitleView: View {
+    let model: RecipeModel
+
+    var body: some View {
+        Text(model.title)
+    }
+}
+```
+
+ここでも `body` が `title` を読むので、その変更は追跡されます。以前のように、受け取る側に `@ObservedObject` を付ける必要はありません。
+
+## 入力欄につなぐときは `@Bindable`
+
+`TextField` は、現在の値を読むだけでなく、入力された値をモデルへ書き戻します。そのために必要なのが `Binding` です。`@Observable` なモデルからBindingを作るときは、`@Bindable` を使います。
+
+```swift
+struct RecipeTitleEditor: View {
+    @Bindable var model: RecipeModel
+
+    var body: some View {
+        TextField("レシピ名", text: $model.title)
+    }
+}
+```
+
+`$model.title` が、モデルの `title` と入力欄をつなぎます。`@Bindable` を付けても別のモデルを作るわけではなく、親から受け取ったインスタンスを編集します。
+
+整理すると、モデルを画面内に保持するための `@State`、受け取って読むだけなら通常のプロパティ、入力欄へBindingを渡すための `@Bindable`、と使い分けます。これらをすべてのViewに付ける必要はありません。
+
+## このアプリでは、なぜ一覧のタグも更新されるのか
+
+完成サンプルではObservationへの移行に加え、**一覧と詳細が同じタグのデータを使う**ように設計を変えています。これはObservationを使うための必須条件ではなく、画面間でタグの表示が食い違うのを防ぐための変更です。
+
+アプリの起動時に一つの `RecipeStore` を作り、一覧・詳細・タグ追加の各画面へ渡します。タグは、このStoreの `hashtagsByRecipeID` にレシピIDごとに保存します。各画面の読み込み状況やエラーメッセージは、その画面のViewModelに持たせます。
+
+[RecipeListViewModel](../../MiniCookpad/View/RecipeList/RecipeListViewModel.swift) の `items` は、取得したレシピとStoreのタグを組み合わせる計算プロパティです。
+
+```swift
+var items: [RecipeListItem] {
+    recipes.map {
+        .init(recipe: $0, hashtags: store.hashtagsByRecipeID[$0.id, default: []])
+    }
+}
+```
+
+一覧の `body` が `items` を読むと、この計算の中で `recipes` と `store.hashtagsByRecipeID` も読まれます。ViewModelとStoreはどちらも `@Observable` なので、SwiftUIはこの読み取りも追跡できます。計算プロパティの結果を別途 `@Published` に保存し直す必要はありません。
+
+タグを追加すると、次の順に表示へ反映されます。
+
+1. タグ追加画面がStoreへ保存を依頼します。
+2. 通信が成功したら、Storeが返ってきたタグを `hashtagsByRecipeID` に追加します。
+3. 同じStoreのタグを読んでいる一覧と詳細で、更新後の内容が表示されます。
+
+ここで追跡するのは `hashtagsByRecipeID` という辞書のプロパティです。レシピIDごとに別々のプロパティとして追跡しているわけではありません。
+
+もし一覧と詳細で別々のStoreを作ったら、片方を更新しても、もう片方のデータは変わりません。**同じデータを渡すのがStoreを共有する設計、データの変更を表示につなぐのがObservation**です。この二つを分けて理解しましょう。
+
+## 通信処理との関係
+
+通信には待ち時間があるため、ViewModelにはデータだけでなく、読み込み中かどうかやエラーメッセージも持たせます。一覧では取得前・読み込み中・空の結果・失敗を区別し、失敗したら再試行できるようにしています。キャンセルは利用者に通信エラーとして表示しません。
+
+モデルの `@MainActor` は、これらの状態へアクセスする場所を揃える指定です。Observationとは別の仕組みです。通信待ちとMainActorの関係は [Swift 6で通信を扱う](concurrency.md) で説明します。
+
+実装を読むときは、[MiniCookpadApp](../../MiniCookpad/MiniCookpadApp.swift) でStoreを作る箇所から、[一覧画面](../../MiniCookpad/View/RecipeList/RecipeListView.swift)、ViewModel、[RecipeStore](../../MiniCookpad/Library/RecipeStore.swift) の順に追ってみてください。Storeを作るときに通信クライアントも渡すので、テストでは通信の結果を自由に変えられます。
+
+## 確かめてみよう
+
+- 小さな例の `body` にブレークポイントを置き、`title` と `isLoading` を変更したときの違いを比べてみましょう。次に `ProgressView` の条件を加えて、`isLoading` の変更も表示に使われることを確かめてください。
+- タグを追加した後で一覧に戻り、再取得を呼び出さなくても追加したタグが表示されることを確認しましょう。どの画面が同じStoreを受け取っているか、コードで追ってみてください。
+
+ObservationはiOS 17以降で利用できます。`ObservableObject` を使う既存コードをすべて書き換える必要はありません。この教材では、iOS 17以降を対象に新しく実装する方法として採用しています。
+
+参考: Appleの [Observationへの移行ガイド](https://developer.apple.com/documentation/swiftui/migrating-from-the-observable-object-protocol-to-the-observable-macro)、[Discover Observation in SwiftUI](https://developer.apple.com/videos/play/wwdc2023/10149/)
