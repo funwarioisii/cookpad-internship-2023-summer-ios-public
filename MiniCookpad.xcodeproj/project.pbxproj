@@ -44,6 +44,7 @@
 		C74251142A14E9C700074EA0 /* RecipeListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74251132A14E9C700074EA0 /* RecipeListViewModel.swift */; };
 		202600000000000000000100 /* RecipeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000000 /* RecipeStore.swift */; };
 		202600000000000000000101 /* AddRecipeHashtagsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000001 /* AddRecipeHashtagsViewModel.swift */; };
+		202600000000000000000102 /* RecipeImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000002 /* RecipeImage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +105,7 @@
 		C74251132A14E9C700074EA0 /* RecipeListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListViewModel.swift; sourceTree = "<group>"; };
 		202600000000000000000000 /* RecipeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeStore.swift; sourceTree = "<group>"; };
 		202600000000000000000001 /* AddRecipeHashtagsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRecipeHashtagsViewModel.swift; sourceTree = "<group>"; };
+		202600000000000000000002 /* RecipeImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeImage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -243,6 +245,7 @@
 		1EE1A3D0287EC737005C11AA /* View */ = {
 			isa = PBXGroup;
 			children = (
+				202600000000000000000002 /* RecipeImage.swift */,
 				1E36D5D228927C5C009DD683 /* AddRecipeHashtags */,
 				1EE1A3D4287EC77A005C11AA /* RecipeDetail */,
 				1EE1A3D3287EC770005C11AA /* RecipeList */,
@@ -467,6 +470,7 @@
 				2AF750352A29E98700E11B8E /* RecipeDetailView.swift in Sources */,
 				1EF732F2287EBA1E00C3AE1D /* GetRecipeDetailRequest.swift in Sources */,
 				1E5FABFC287D563A000C20D9 /* MiniCookpadApp.swift in Sources */,
+				202600000000000000000102 /* RecipeImage.swift in Sources */,
 				202600000000000000000101 /* AddRecipeHashtagsViewModel.swift in Sources */,
 				202600000000000000000100 /* RecipeStore.swift in Sources */,
 				1EFD4C00287ECC9000B8EB61 /* RecipeDetailItem.swift in Sources */,
