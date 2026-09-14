@@ -49,3 +49,20 @@
 
 - [Chapter5: 課題 ① レシピ詳細画面を作ろう](chapter_05.md)
 - [Chapter6: 課題 ② ハッシュタグ追加画面を作ろう](chapter_06.md)
+
+## 2026 年版の補足
+
+上記の各章の本文・画像と`chN-initial`ブランチは、2023 年版のものです。
+2026 年版の完成サンプルでは、Observation を使った状態管理や、保存に失敗した場合の再試行などを追加しています。元の章で作ったコードと比べながら、以下の補足も読んでみてください。
+
+| 元の章 | 補足 |
+| --- | --- |
+| Chapter 1 | [2026 年版のサンプルを起動する場合](chapter_01.md#補足-2026-年版のサンプルを起動する場合) |
+| Chapter 2・3・5 | [画像の表示と画面遷移](2026/ui.md) |
+| Chapter 4 | [Swift 6 と API 通信](2026/concurrency.md)、[Observation を使って ViewModel の変更を検知する](2026/state.md) |
+| Chapter 6 | [ハッシュタグ追加画面の補足](2026/saving.md) |
+| 追加課題 | [Chapter 7: テストでアプリの動作を確認しよう](chapter_07.md) |
+
+完成サンプルは Xcode 26.3 と iOS 26.3 Simulator で動作を確認しています。対応 OS は iOS 17 以降です。Swift 6 を使い、Default Actor Isolation は nonisolated、Approachable Concurrency は Yes に設定しています。これらの設定については [Swift 6 と API 通信の補足](2026/concurrency.md) を参照してください。
+
+より新しい SDK で試したい方に向けた内容は、[画像の表示と画面遷移の補足](2026/ui.md) の末尾に載せています。
