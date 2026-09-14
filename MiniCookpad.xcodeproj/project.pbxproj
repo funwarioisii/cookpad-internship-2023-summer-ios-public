@@ -42,6 +42,7 @@
 		C74251102A13596300074EA0 /* RecipeListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C742510F2A13596300074EA0 /* RecipeListRow.swift */; };
 		C74251122A14C6AC00074EA0 /* RecipeListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74251112A14C6AC00074EA0 /* RecipeListView.swift */; };
 		C74251142A14E9C700074EA0 /* RecipeListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74251132A14E9C700074EA0 /* RecipeListViewModel.swift */; };
+		202600000000000000000100 /* RecipeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000000 /* RecipeStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -100,6 +101,7 @@
 		C742510F2A13596300074EA0 /* RecipeListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListRow.swift; sourceTree = "<group>"; };
 		C74251112A14C6AC00074EA0 /* RecipeListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListView.swift; sourceTree = "<group>"; };
 		C74251132A14E9C700074EA0 /* RecipeListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListViewModel.swift; sourceTree = "<group>"; };
+		202600000000000000000000 /* RecipeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -212,6 +214,7 @@
 			isa = PBXGroup;
 			children = (
 				1EE1A3C8287EC10E005C11AA /* ProcessInfo+Extension.swift */,
+				202600000000000000000000 /* RecipeStore.swift */,
 			);
 			path = Library;
 			sourceTree = "<group>";
@@ -461,6 +464,7 @@
 				2AF750352A29E98700E11B8E /* RecipeDetailView.swift in Sources */,
 				1EF732F2287EBA1E00C3AE1D /* GetRecipeDetailRequest.swift in Sources */,
 				1E5FABFC287D563A000C20D9 /* MiniCookpadApp.swift in Sources */,
+				202600000000000000000100 /* RecipeStore.swift in Sources */,
 				1EFD4C00287ECC9000B8EB61 /* RecipeDetailItem.swift in Sources */,
 				C74251142A14E9C700074EA0 /* RecipeListViewModel.swift in Sources */,
 				2AF750332A29E95800E11B8E /* RecipeDetailViewModel.swift in Sources */,

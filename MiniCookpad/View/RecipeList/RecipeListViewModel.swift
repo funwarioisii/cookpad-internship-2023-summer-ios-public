@@ -1,25 +1,31 @@
-import Combine
+import Observation
 
 @MainActor
-final class RecipeListViewModel: ObservableObject {
-    @Published var items: [RecipeListItem] = []
-    
+@Observable
+final class RecipeListViewModel {
+    let store: RecipeStore
+    private var recipes: [GetRecipeListResponse.Recipe] = []
+    private(set) var isLoading = false
+    private(set) var hasLoaded = false
+    private(set) var errorMessage: String?
+
+    var items: [RecipeListItem] {
+        recipes.map { .init(recipe: $0, hashtags: store.hashtagsByRecipeID[$0.id, default: []]) }
+    }
+
+    init(store: RecipeStore) { self.store = store }
+
     func request() async {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
         do {
-            let recipeListResponse = try await apiClient.send(request: GetRecipeListRequest())
-            let recipeHashtagsResponse = try await apiClient.send(request: GetRecipeHashtagsRequest(recipeIds: recipeListResponse.recipes.map(\.id)))
-            
-            var newItems: [RecipeListItem] = []
-            for (recipe, recipeHashtags) in zip(recipeListResponse.recipes, recipeHashtagsResponse.recipeHashtags) {
-                if recipe.id != recipeHashtags.recipeId {
-                    fatalError("今回は必ずrecipe_idを送った順にレシピに紐付くハッシュタグがAPIから返ってくることが保証されているとして進める")
-                }
-                newItems.append(.init(recipe: recipe, hashtags: recipeHashtags.hashtags))
-            }
-            
-            items = newItems
+            recipes = try await store.loadRecipes()
+            hasLoaded = true
         } catch {
-            print(error)
+            guard !(error is CancellationError), !Task.isCancelled else { return }
+            errorMessage = "レシピを取得できませんでした。もう一度お試しください。"
         }
     }
 }

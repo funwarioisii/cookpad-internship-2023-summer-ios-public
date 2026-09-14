@@ -1,22 +1,33 @@
-import Combine
+import Observation
 
 @MainActor
-final class RecipeDetailViewModel: ObservableObject {
-    private let recipeID: Int64
-    @Published var recipeDetailItem: RecipeDetailItem?
+@Observable
+final class RecipeDetailViewModel {
+    let store: RecipeStore
+    let recipeID: Int64
+    private var recipe: GetRecipeDetailResponse.Recipe?
+    private(set) var isLoading = false
+    private(set) var errorMessage: String?
 
-    init(recipeID: Int64, recipeDetailItem: RecipeDetailItem? = nil) {
+    var recipeDetailItem: RecipeDetailItem? {
+        recipe.map { .init(recipe: $0, hashtags: store.hashtagsByRecipeID[recipeID, default: []]) }
+    }
+
+    init(recipeID: Int64, store: RecipeStore) {
         self.recipeID = recipeID
-        self.recipeDetailItem = recipeDetailItem
+        self.store = store
     }
 
     func request() async {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
         do {
-            async let recipeDetail = apiClient.send(request: GetRecipeDetailRequest(recipeId: recipeID))
-            async let hashtagsResponse = apiClient.send(request: GetRecipeHashtagsRequest(recipeIds: [recipeID]))
-            recipeDetailItem = try await RecipeDetailItem(recipe: recipeDetail.recipe, hashtags: hashtagsResponse.recipeHashtags.flatMap { $0.hashtags })
+            recipe = try await store.loadRecipe(id: recipeID)
         } catch {
-            print(error)
+            guard !(error is CancellationError), !Task.isCancelled else { return }
+            errorMessage = "レシピを取得できませんでした。もう一度お試しください。"
         }
     }
 }

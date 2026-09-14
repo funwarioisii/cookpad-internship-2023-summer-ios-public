@@ -2,7 +2,7 @@ import SwiftUI
 
 struct AddRecipeHashtagsView: View {
     let item: RecipeDetailItem
-    var hashtagsCreatedHandler: (() -> Void)?
+    let store: RecipeStore
     @State private var hashtagsText: String = ""
     @State private var showHashtagsAddedAlert: Bool = false
     @Environment(\.dismiss) var dismiss
@@ -44,13 +44,8 @@ struct AddRecipeHashtagsView: View {
                 // 軽量なリクエストでありコードを複雑にしないため、キャンセルなどについては考慮しない
                 Task {
                     do {
-                        let response = try await apiClient.send(request: PostRecipeHashtagsRequest(recipeID: item.recipe.id, value: trimmedHashtags(hashtagsText)))
-                        if !response.hashtags.isEmpty {
-                            // Try: ボタンタップ時にアラートを表示する
-                            showHashtagsAddedAlert = true
-                            // Try: POSTリクエストのレスポンスのハッシュタグをRecipeDetailViewに反映する
-                            hashtagsCreatedHandler?()
-                        }
+                        try await store.addHashtags(recipeID: item.recipe.id, value: trimmedHashtags(hashtagsText))
+                        showHashtagsAddedAlert = true
                     } catch {
                         print(error)
                     }
@@ -111,6 +106,6 @@ struct AddRecipeHashtagsView_Previews: PreviewProvider {
     )
 
     static var previews: some View {
-        AddRecipeHashtagsView(item: item)
+        AddRecipeHashtagsView(item: item, store: RecipeStore(client: StubAPIClient()))
     }
 }

@@ -1,7 +1,11 @@
 import SwiftUI
 
 struct RecipeDetailView: View {
-    @ObservedObject var viewModel: RecipeDetailViewModel
+    @State private var viewModel: RecipeDetailViewModel
+
+    init(recipeID: Int64, store: RecipeStore) {
+        _viewModel = State(initialValue: RecipeDetailViewModel(recipeID: recipeID, store: store))
+    }
     @State private var showAddRecipeHashtags: Bool = false
 
     var body: some View {
@@ -101,14 +105,7 @@ struct RecipeDetailView: View {
         }
         .sheet(isPresented: $showAddRecipeHashtags) {
             if let recipeDetailItem = viewModel.recipeDetailItem {
-                AddRecipeHashtagsView(
-                    item: recipeDetailItem,
-                    hashtagsCreatedHandler: {
-                        Task {
-                            await viewModel.request()
-                        }
-                    }
-                )
+                AddRecipeHashtagsView(item: recipeDetailItem, store: viewModel.store)
             }
         }
     }
@@ -138,16 +135,8 @@ struct RecipeDetailView: View {
     }
 }
 
-struct RecipeDetailView_Previews: PreviewProvider {
-    static var previews: some View {
-        RecipeDetailView(
-            viewModel: RecipeDetailViewModel(
-                recipeID: 1,
-                recipeDetailItem: .init(
-                    recipe: .mock,
-                    hashtags: []
-                )
-            )
-        )
+#Preview {
+    NavigationStack {
+        RecipeDetailView(recipeID: 1, store: RecipeStore(client: StubAPIClient()))
     }
 }
