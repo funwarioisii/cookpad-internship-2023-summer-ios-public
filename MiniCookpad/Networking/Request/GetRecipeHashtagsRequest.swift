@@ -18,8 +18,8 @@ struct GetRecipeHashtagsRequest: APIRequest {
     }
 }
 
-struct GetRecipeHashtagsResponse: Decodable {
-    struct RecipeHashtag: Decodable {
+struct GetRecipeHashtagsResponse: Decodable, Sendable {
+    struct RecipeHashtag: Decodable, Sendable {
         let recipeId: Int64
         let hashtags: [Hashtag]
     }

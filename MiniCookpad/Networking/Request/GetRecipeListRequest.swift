@@ -12,13 +12,13 @@ struct GetRecipeListRequest: APIRequest {
     }
 }
 
-struct GetRecipeListResponse: Decodable {
-    struct Recipe: Decodable {
-        struct User: Decodable {
+struct GetRecipeListResponse: Decodable, Sendable {
+    struct Recipe: Decodable, Sendable {
+        struct User: Decodable, Sendable {
             let name: String
         }
 
-        struct Ingredient: Decodable {
+        struct Ingredient: Decodable, Sendable {
             let name: String
         }
 

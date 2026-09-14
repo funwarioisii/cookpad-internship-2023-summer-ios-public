@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 let apiClient: APIClient = {
     if ProcessInfo.processInfo.isRunningForPreview || ProcessInfo.processInfo.useStubAPIClient {
         return StubAPIClient()

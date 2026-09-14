@@ -1,6 +1,7 @@
 import Foundation
 
-protocol APIClient {
+@MainActor
+protocol APIClient: AnyObject, Sendable {
     func send<Request: APIRequest>(request: Request) async throws -> Request.Response
 }
 
@@ -39,6 +40,9 @@ final class MiniCookpadAPIClient: APIClient {
             #endif
             (data, urlResponse) = try await session.data(for: urlRequest)
         } catch {
+            if Task.isCancelled || (error as? URLError)?.code == .cancelled {
+                throw CancellationError()
+            }
             throw APIClientError.connectionError(error)
         }
 
