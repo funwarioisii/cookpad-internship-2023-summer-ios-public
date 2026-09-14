@@ -49,3 +49,17 @@
 
 - [Chapter5: 課題 ① レシピ詳細画面を作ろう](chapter_05.md)
 - [Chapter6: 課題 ② ハッシュタグ追加画面を作ろう](chapter_06.md)
+
+## 2026年版の差分
+
+上記の本文・画像・`chN-initial` は2023年版です。2026年版の完成サンプルを読む場合は、次の補足と対応コードを参照してください。元の手順や基礎説明は残し、変更が必要な箇所だけ補足しています。
+
+| 元の章 | 2026年版で読む補足 |
+| --- | --- |
+| Chapter 1 | [サンプル起動の補足](chapter_01.md)（サンプルAPIが初期設定） |
+| Chapter 2・3・5 | [画像・task・画面遷移・詳細](2026/ui.md) |
+| Chapter 4 | [Swift 6と通信](2026/concurrency.md)、[Observationと状態共有](2026/state.md) |
+| Chapter 6 | [タグ保存・失敗・二重送信](2026/saving.md) |
+| 追加課題 | [Chapter 7: Swift TestingとUIテスト](chapter_07.md) |
+
+検証環境はXcode 26.3 / iOS 26.3 Simulatorです。Deployment TargetはiOS 17、Swift 6言語モード、Default Actor Isolationはnonisolated、Approachable ConcurrencyはYesです。新SDK限定の発展事項は画面表示の補足に分けています。
