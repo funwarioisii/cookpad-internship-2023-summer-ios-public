@@ -16,11 +16,7 @@ struct AddRecipeHashtagsView: View {
             Form {
                 Section {
                     HStack {
-                        AsyncImage(url: URL(string: item.recipe.imageUrl ?? "")) { image in
-                            image.resizable().scaledToFill()
-                        } placeholder: {
-                            Color.gray
-                        }
+                        RecipeImage(url: URL(string: item.recipe.imageUrl ?? ""))
                             .frame(width: 64, height: 64)
                             .clipShape(Circle())
                         VStack(alignment: .leading) {

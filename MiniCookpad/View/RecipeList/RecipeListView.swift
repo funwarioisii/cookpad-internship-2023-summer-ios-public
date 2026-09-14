@@ -9,9 +9,7 @@ struct RecipeListView: View {
 
     var body: some View {
         List(viewModel.items) { item in
-            NavigationLink {
-                RecipeDetailView(recipeID: item.id, store: viewModel.store)
-            } label: {
+            NavigationLink(value: item.id) {
                 RecipeListRow(item: item)
             }
             .accessibilityIdentifier("recipeRow-\(item.id)")
@@ -44,6 +42,9 @@ struct RecipeListView: View {
         .task { await viewModel.request() }
         .refreshable { await viewModel.request() }
         .navigationTitle("レシピ一覧")
+        .navigationDestination(for: Int64.self) { id in
+            RecipeDetailView(recipeID: id, store: viewModel.store)
+        }
     }
 }
 
