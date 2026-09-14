@@ -1,27 +1,55 @@
-# Swift 6と通信の変更点
+# Swift 6で通信を扱う
 
-このページは2023年版のChapter 4・6に対する補足です。画面の状態共有と入力の変更は後続PRで扱います。
+Chapter 4・6で使う `async/await` は、2026年版でも引き続き使います。Swift 6への移行で見直すのは、複数の処理から同じデータにアクセスしても安全かどうかです。コンパイラが確認できるよう、通信クライアントと送受信する型に、その扱いを明示します。
 
-## 設定を明示する理由
+## 画面の状態をMainActorで扱う
 
-Swift 6言語モード、Strict Concurrency Checking: Complete、Default Actor Isolation: nonisolated、Approachable Concurrency: Yesに揃えます。新規プロジェクトの既定値によってサンプルの説明が変わらないよう、隔離境界を明示するためです。Deployment Targetは、次のObservation移行に必要なiOS 17とします。
+この教材では、画面の状態を持つモデルと通信クライアントに `@MainActor` を付けています。これらの可変データへのアクセスをMainActorに揃え、同時に書き換えられないようにします。
 
-`@MainActor` を付けたAPIClientとUIモデルが、可変状態を保護します。APIClientはSendableを要求し、リクエストとレスポンスはSendableな値型にします。これにより `async let` の子タスクからもクライアントを安全に参照できます。グローバルapiClientはこの段階ではMainActorに隔離し、次のPRで初期化時の注入へ置き換えます。
+APIClientには `Sendable` への準拠も求めています。`Sendable` は、並行して動く処理の間で安全に渡せる型であることを表します。通信クライアントはMainActorで保護し、リクエストとレスポンスは `Sendable` な値型として定義することで、`async let` の子タスクにも渡せるようにしています。
 
-## asyncと並行実行
+## 通信を待つ間、画面は動くのか
 
-`async` は別スレッドで実行するという指定ではありません。`URLSession.data(for:)` は通信待ちの間タスクを中断するため、MainActorを占有し続けません。一方、重い同期処理はUIの応答を遅らせます。必要なら計測したうえで別actorや `@concurrent` な関数へ移します。
+`async` は「別のスレッドで実行する」という指定ではありません。ただし、`URLSession.data(for:)` は通信の完了を待つ間、タスクの実行を中断できます。MainActorから呼び出しても、通信を待つために画面の操作を止め続けるわけではありません。
 
-一覧は取得したレシピIDがタグ取得に必要なので順にawaitします。詳細とタグはどちらもIDだけで取得できるため `async let` で同時に待てます。
+一方、大量のデータを変換するなど、時間のかかる同期処理をMainActorで行うと、画面の応答が遅くなります。処理時間を調べて問題があれば、別のactorや `@concurrent` な関数へ移すことを検討します。
 
-Approachable Concurrencyのnonisolated asyncが呼び出し元のactorを引き継ぐ設定と、Default Actor Isolationは別の設定です。警告を消す目的で `@unchecked Sendable` を追加せず、状態を誰が管理するかを考えます。
+また、`await` で待っている間には、別の操作が実行されることがあります。関数の開始から終了まで、ほかの処理が一切入らないという意味ではありません。
 
-## POSTとキャンセル
+## 順番に取得するか、並行して取得するか
 
-`PostRecipeHashtagsRequest.makeBody()` でEncodableなBodyをJSONEncoderに渡します。`[String: Any]` の辞書ではなく送信データの構造を型で表します。レスポンス名も `PostRecipeHashtagsResponse` に揃えます。
+一覧では、まずレシピを取得し、そのIDを使ってタグを取得します。後の通信が前の結果を必要とするため、順番に待ちます。
 
-APIClientはURLSessionのキャンセルを通常の接続エラーで包まず、CancellationErrorとして上位へ返します。画面で失敗とキャンセルを区別するためです。POSTのキャンセルはサーバーの更新取り消しを保証しません。
+詳細とタグは、どちらもレシピIDさえあれば取得できます。この場合は `async let` で二つの通信を開始し、両方の結果を待てます。
 
-対応コード: [APIClient](../../MiniCookpad/Networking/APIClient/APIClient.swift)、[APIRequest](../../MiniCookpad/Networking/APIClient/APIRequest.swift)、[POST](../../MiniCookpad/Networking/Request/PostRecipeHashtagsRequest.swift)
+```swift
+async let detail = client.send(request: GetRecipeDetailRequest(recipeId: id))
+async let tags = client.send(request: GetRecipeHashtagsRequest(recipeIds: [id]))
+let (detailResponse, tagsResponse) = try await (detail, tags)
+```
 
-参考: [Swift 6.2](https://www.swift.org/blog/swift-6.2-released/)、[Concurrency](https://docs.swift.org/swift-book/LanguageGuide/Concurrency.html)
+`async let` で作る子タスクは、この処理の範囲内で完了を待ちます。二つの結果がそろってから画面に使うことで、詳細だけ取得できてタグがまだない、といった途中の状態を扱わずに済みます。
+
+## 送信データとキャンセル
+
+タグを追加するPOSTでは、送信する項目を `Encodable` な構造体で定義し、`JSONEncoder` でJSONに変換します。`[String: Any]` の辞書を組み立てる方法に比べ、各項目の型がコードからわかるようになります。
+
+通信がキャンセルされた場合、APIClientは通常の接続エラーと区別して `CancellationError` を返します。画面を閉じて不要になった取得処理まで、通信失敗として利用者に伝えないためです。なお、POSTの通信をキャンセルしても、サーバーで行われた更新を取り消せるとは限りません。
+
+## このプロジェクトの設定
+
+プロジェクトでは、次の設定を明示しています。
+
+| 設定 | 値と目的 |
+| --- | --- |
+| Swift Language Version | Swift 6。並行処理に関する安全性のチェックを有効にします。 |
+| Strict Concurrency Checking | Complete。Swift 6モードでは完全なチェックが行われます。 |
+| Default Actor Isolation | nonisolated。MainActorで扱う型には `@MainActor` を明記します。 |
+| Approachable Concurrency | Yes。呼び出し元のactorでnonisolatedなasync関数を実行する設定などを有効にします。 |
+| iOS Deployment Target | iOS 17。Observationを利用できるバージョンを下限にします。 |
+
+Default Actor IsolationとApproachable Concurrencyは別の設定です。新規プロジェクトを作るときの既定値だけに頼らず、このサンプルがどの前提で動くかを確認してください。
+
+対応コード: [APIClient](../../MiniCookpad/Networking/APIClient/APIClient.swift)、[APIRequest](../../MiniCookpad/Networking/APIClient/APIRequest.swift)、[PostRecipeHashtagsRequest](../../MiniCookpad/Networking/Request/PostRecipeHashtagsRequest.swift)
+
+参考: [Swift 6.2の変更点](https://www.swift.org/blog/swift-6.2-released/)、[Swift言語ガイドのConcurrency](https://docs.swift.org/swift-book/LanguageGuide/Concurrency.html)
