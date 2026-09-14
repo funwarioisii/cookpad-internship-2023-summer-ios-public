@@ -43,6 +43,7 @@
 		C74251122A14C6AC00074EA0 /* RecipeListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74251112A14C6AC00074EA0 /* RecipeListView.swift */; };
 		C74251142A14E9C700074EA0 /* RecipeListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74251132A14E9C700074EA0 /* RecipeListViewModel.swift */; };
 		202600000000000000000100 /* RecipeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000000 /* RecipeStore.swift */; };
+		202600000000000000000101 /* AddRecipeHashtagsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000001 /* AddRecipeHashtagsViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -102,6 +103,7 @@
 		C74251112A14C6AC00074EA0 /* RecipeListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListView.swift; sourceTree = "<group>"; };
 		C74251132A14E9C700074EA0 /* RecipeListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListViewModel.swift; sourceTree = "<group>"; };
 		202600000000000000000000 /* RecipeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeStore.swift; sourceTree = "<group>"; };
+		202600000000000000000001 /* AddRecipeHashtagsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRecipeHashtagsViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -133,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				1E36D5D328927D05009DD683 /* AddRecipeHashtagsView.swift */,
+				202600000000000000000001 /* AddRecipeHashtagsViewModel.swift */,
 			);
 			path = AddRecipeHashtags;
 			sourceTree = "<group>";
@@ -464,6 +467,7 @@
 				2AF750352A29E98700E11B8E /* RecipeDetailView.swift in Sources */,
 				1EF732F2287EBA1E00C3AE1D /* GetRecipeDetailRequest.swift in Sources */,
 				1E5FABFC287D563A000C20D9 /* MiniCookpadApp.swift in Sources */,
+				202600000000000000000101 /* AddRecipeHashtagsViewModel.swift in Sources */,
 				202600000000000000000100 /* RecipeStore.swift in Sources */,
 				1EFD4C00287ECC9000B8EB61 /* RecipeDetailItem.swift in Sources */,
 				C74251142A14E9C700074EA0 /* RecipeListViewModel.swift in Sources */,
