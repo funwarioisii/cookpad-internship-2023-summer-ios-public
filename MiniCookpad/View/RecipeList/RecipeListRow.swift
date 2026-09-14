@@ -5,17 +5,13 @@ struct RecipeListRow: View {
 
     var body: some View {
         HStack(alignment: .top) {
-            AsyncImage(url: URL(string: item.recipe.imageUrl ?? "")) { image in
-                image.resizable()
-            } placeholder: {
-                Color.gray
-            }
-            .frame(width: 100, height: 100)
-            .cornerRadius(4)
+            RecipeImage(url: URL(string: item.recipe.imageUrl ?? ""))
+                .frame(width: 100, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.recipe.title)
                     .font(.headline)
-                    .foregroundColor(.recipeTitle)
+                    .foregroundStyle(.primary)
                 Text("by \(item.recipe.user.name)")
                     .font(.caption)
                     .foregroundColor(.gray)
@@ -26,14 +22,14 @@ struct RecipeListRow: View {
                 Text(item.hashtags.map({ "#\($0.name)" }).joined(separator: " "))
                     .lineLimit(1)
                     .font(.caption2)
-                    .foregroundColor(.black)
+                    .foregroundStyle(.primary)
             }
         }
     }
 }
 
-struct RecipeListRow_Previews: PreviewProvider {
-    static let item = RecipeListItem(
+#Preview {
+    let item = RecipeListItem(
         recipe: .init(
             id: 1,
             title: "ホワイトソースのパスタ",
@@ -55,7 +51,5 @@ struct RecipeListRow_Previews: PreviewProvider {
         ]
     )
 
-    static var previews: some View {
-        RecipeListRow(item: item)
-    }
+    RecipeListRow(item: item)
 }

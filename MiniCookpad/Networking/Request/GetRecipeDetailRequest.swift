@@ -10,20 +10,20 @@ struct GetRecipeDetailRequest: APIRequest {
     }
 }
 
-struct GetRecipeDetailResponse: Decodable {
-    struct Recipe: Decodable {
-        struct User: Decodable {
+struct GetRecipeDetailResponse: Decodable, Sendable {
+    struct Recipe: Decodable, Sendable {
+        struct User: Decodable, Sendable {
             let name: String
             let imageUrl: String?
         }
 
-        struct Ingredient: Decodable, Identifiable {
+        struct Ingredient: Decodable, Sendable, Identifiable {
             let id: Int64
             let name: String
             let quantity: String?
         }
 
-        struct Step: Decodable, Identifiable {
+        struct Step: Decodable, Sendable, Identifiable {
             let id: Int64
             let memo: String
             let imageUrl: String?

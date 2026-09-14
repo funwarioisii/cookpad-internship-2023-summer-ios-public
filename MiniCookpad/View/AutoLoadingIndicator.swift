@@ -10,9 +10,7 @@ struct AutoLoadingIndicator: View {
         case (false, false):
             ProgressView()
                 .frame(maxWidth: .infinity, alignment: .center)
-                .onAppear {
-                    Task { await loadMoreAction() }
-                }
+                .task { await loadMoreAction() }
         case (true, _):
             ProgressView()
                 .frame(maxWidth: .infinity, alignment: .center)

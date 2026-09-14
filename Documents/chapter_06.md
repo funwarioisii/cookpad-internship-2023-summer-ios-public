@@ -1,159 +1,73 @@
-# 基礎課題 ② ハッシュタグ追加画面を作ろう
+# ハッシュタグ追加と画面間の同期
 
-この基礎課題では、ハッシュタグ追加画面を作ります。
-完成すると、以下の gif 画像のようになります。
+対応ファイル:
+- [AddRecipeHashtagsView.swift](../MiniCookpad/View/AddRecipeHashtags/AddRecipeHashtagsView.swift)
+- [AddRecipeHashtagsViewModel.swift](../MiniCookpad/View/AddRecipeHashtags/AddRecipeHashtagsViewModel.swift)
+- [PostRecipeHashtagsRequest.swift](../MiniCookpad/Networking/Request/PostRecipeHashtagsRequest.swift)
+- [RecipeStore.swift](../MiniCookpad/Library/RecipeStore.swift)
 
-<img src="images/chapter_06/final.gif" width="50%" />
+この教材のタグはレシピに紐付く簡略化された仕様です。
 
-**＊補足**
-クックパッドのレシピサービスでは、ハッシュタグはレシピにつくれぽを投稿する際に付けるものであり、本来はレシピではなくつくれぽに紐付くものです。今回の講義では簡略化のため、ハッシュタグをレシピに紐付けるものとして進めます。
+## 完成条件
 
-## 仕様
+1. 詳細画面の「#」でモーダルを開く。
+2. 入力を正規化する（全角スペース→半角、全角＃→半角、前後の空白・改行除去）。
+3. 空入力なら送信しない。送信中は再送信・編集・モーダルを閉じる操作を無効にする。
+4. 失敗したら入力を残し、説明を表示して再試行できる。
+5. 成功したらモーダルを閉じ、一覧と詳細の両方に新しいタグが表示される。
 
-以下の仕様を満たすハッシュタグ追加画面を作成してください。
+2023年版の成功アラートは省き、画面を閉じた後のタグ表示を成功のフィードバックにします。
 
-### 画面遷移
+## 入力をモデルへBindingする
 
-- ナビゲーションバー右の「#」ボタンをタップすると、ハッシュタグ追加画面をモーダル表示する
-  - 「#」ボタンは `View/RecipeDetail/AddHashtagsButton.swift`という名前で既にプロジェクト内に用意されています
-  - ハッシュタグ追加画面は`View/AddRecipeHashtags/AddRecipeHashtagsView.swift`という名前で既にプロジェクト内に用意されています
-
-### 画面、API 通信
-
-#### ハッシュタグ追加画面でユーザーが「ハッシュタグを追加する」ボタンをタップした時
-
-- 以下の仕様でユーザーが入力したテキストをトリムする
-  - 全角スペースを半角スペースに変換
-  - 全角のハッシュタグ(＃)を半角のハッシュタグ(#)に変換
-  - テキストの前後のスペース及び改行を削除
-- トリムしたテキストを使ってハッシュタグを追加する POST リクエストを送る
-  - `Networking/Request/PostRecipeHashtagsRequest.swift`を使います
-  - API リクエストの仕様は「参考:トリムしたテキストを使ってハッシュタグを追加する POST リクエストを送る」を参照してください
-  - 今回は ViewModel の作成は任意です
-- API リクエストが成功したら「ハッシュタグを追加しました」というアラートを表示する
-  - アラート内の「OK ボタン」を押したら、AddRecipeHashtagsView を閉じてレシピ詳細画面に戻る
-- レシピ詳細画面に戻ると、追加したハッシュタグがハッシュタグ枠に表示されている
-
-## 参考
-
-### `USE_STUB_API_CLIENT`
-
-環境変数`USE_STUB_API_CLIENT`を`1`にすると、サーバー側にリクエストを送らず擬似的に POST リクエストを試すことができます（リクエストに必要なパラメータが不足していても実行できます）。
-
-`USE_STUB_API_CLIENT`を`1`にした場合、以下のレスポンスが固定で返ってきます。開発途中など、実際に API リクエストを行わずに開発を行いたい時に必要に応じて使ってください。
-
-```json
-{
-  "hashtags": [
-    { "id": 1, "name": "平日のお昼に" },
-    { "id": 2, "name": "リピート決定" }
-  ]
-}
-```
-
-### ナビゲーションバー右に「#」ボタンを表示する
-
-[`toolbar`](<https://developer.apple.com/documentation/swiftui/view/toolbar(content:)-5w0tj>)という Modifier を、レシピ詳細画面の ScrollView に付与することで実現できます。
-
-これは使い方を覚える方が早いので、以下のようなコードを RecipeDetailView 内に付与してみましょう。
+ViewはAddRecipeHashtagsViewModelをStateで所有し、body内でBindingを作ります。
 
 ```swift
-.toolbar {
-    ToolbarItemGroup(placement: .navigationBarTrailing) {
-        // let item = レシピ詳細画面に表示しているRecipeDetailItemを取得
-        AddHashtagsButton(item: item)
+@Bindable var model = viewModel
+TextField("#タグ1 #タグ2（スペース区切り）", text: $model.text, axis: .vertical)
+```
+
+`@Bindable` は値の所有者を変えるものではありません。モデルのプロパティへ書き込むためのBindingを作ります。フォームには標準の `Form`、`Section`、`Button` を使い、キーボードや文字サイズに応じてスクロールできるようにします。
+
+## POSTのデータを型で表す
+
+```swift
+func makeBody() throws -> Data? {
+    struct Body: Encodable {
+        let recipe_id: Int64
+        let value: String
     }
+    return try JSONEncoder().encode(Body(recipe_id: recipeID, value: value))
 }
 ```
 
-### 「#」ボタンをタップすると、ハッシュタグ追加画面をモーダル表示する
+`[String: Any]` で組み立てず、送信する構造をEncodableな値で表します。APIRequestはSendableで、Bodyは必要な時点でDataへ変換します。
 
-`View/RecipeDetail/AddHashtagsButton.swift` にハッシュタグ追加画面をモーダル表示するコードを追加しましょう
+## 二重送信とタスクの寿命
 
-```swift
-import SwiftUI
+ボタンからは `Task { await viewModel.save() }` を呼びます。UIでボタンを無効化するだけでなく、save側でもcanSaveを確認して、同じ画面からの重複実行を防ぎます。isSavingは最初のawaitより前に設定します。
 
-struct AddHashtagsButton: View {
-    let item: RecipeDetailItem
+この教材では、利用者が始めたPOSTは完了まで待つ方針です。送信中はキャンセルボタンとインタラクティブなシート終了を無効にします。別の事情で画面が消えても、開始したTaskは自動でキャンセルせず、成功結果を共有Storeへ適用します。アプリ終了後も継続する仕組みではありません。
 
-    var body: some View {
-        Button(action: {
-            // Try: ボタンタップ時にAddRecipeHashtagsViewをモーダル表示する
-        }, label: {
-            Text("#")
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(Color.orange)
-        })
-    }
-}
-```
+GETのキャンセルと違い、POSTの通信キャンセルやタイムアウトはサーバー側の更新取り消しを保証しません。画面内の二重タップ防止だけでは、再試行を含むサーバーの重複更新は防げません。実サービスではサーバーの冪等性・同名タグの扱いも設計します。
 
-### ユーザーが入力したテキストをトリムする
+## 一覧と詳細を同期する
 
-Swift で文字列の置換やトリムはどのように行うのか、各自調べてみましょう。
+POSTのレスポンスは**追加したタグ**の配列です。Storeは既存タグにIDでマージし、同じIDは置き換えます。レスポンスでタグ全体を置き換えて既存タグを消さないようにします。
 
-### トリムしたテキストを使ってハッシュタグを追加する POST リクエストを送る
+一覧と詳細は同じ `hashtagsByRecipeID` を読んでいるので、コールバックで各画面を再取得する必要がありません。シートを閉じたとき `onAppear` が呼ばれることにも依存しません。
 
-`https://localhost:3002/hashtags`に対して、以下のような POST リクエストを送ります。
+## awaitの前後に別の操作が入る
 
-```bash
-$ curl -X POST -H "Content-Type: application/json" -d '{"recipe_id": 4961134, "value": "#平日のお昼に #リピート決定"}' https://localhost:3002/hashtags
-```
+MainActorは「一つのasync関数の開始から終了まで、他の操作を止める」仕組みではありません。await中に別の操作が実行されます。
 
-レスポンスは、以下のように追加したハッシュタグが配列で返ってきます。(id は異なる可能性があります。)
+たとえば古いタグのGETが待機中にPOSTが成功し、その後古いGETが返ると、新しいタグを消してしまうおそれがあります。StoreはレシピIDごとの変更番号をPOST成功時に進め、GET開始時と番号が違えばその結果のタグを適用しません。これはローカルのGET/POST競合を防ぐ仕組みで、サーバー側の更新順序や他端末との同期まで保証するものではありません。
 
-```bash
-{"hashtags":[{"id":1,"name":"平日のお昼に"},{"id":2,"name":"リピート決定"}]}
-```
+## 演習
 
-`Networking/Request/PostRecipeHashtagsRequest.swift`で、`body`に`recipe_id`と`value`を追加してリクエストを送ってみましょう。
+- 入力を全角の `＃夕食　＃簡単` にして送信結果を見る。
+- タグ追加後、一覧へ戻る・再び詳細を開く・再読み込みする、のすべてで新しいタグが残ることを確認する。
+- `StubAPIClient(scenario: .failure)` を注入して、失敗しても入力が残ることを確認する。
+- Chapter 7のテストで、古いGETが新しいPOSTの後に返る状況を再現する。
 
-```swift
-import Foundation
-
-struct PostRecipeHashtagsRequest: APIRequest {
-    typealias Response = PostRecipeListResponse
-    let url = URL(string: "https://localhost:3002/hashtags")!
-    let method: HTTPMethod = .post
-
-    // Try: body に recipe_id と value を追加してリクエストを送る
-}
-
-struct PostRecipeListResponse: Decodable {
-    let hashtags: [Hashtag]
-}
-```
-
-### API リクエストが成功したら「ハッシュタグを追加しました」というアラートを表示する & アラート内の「OK ボタン」を押したら、AddRecipeHashtagsView を閉じてレシピ詳細画面に戻る
-
-`View/AddRecipeHashtags/AddRecipeHashtagsView.swift`で、アラートを表示する処理と、アラート内の「OK ボタン」を押したら AddRecipeHashtagsView を閉じる処理を追加しましょう。
-
-```swift
-            Spacer().frame(height: 60)
-
-            Button(action: {
-                ...
-                // Try: ボタンタップ時にアラートを表示する
-            }, label: {
-                Text("ハッシュタグを追加する")
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .frame(height: 50)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.orange)
-                    .cornerRadius(8)
-            })
-        }
-        .frame(maxWidth: 320)
-        .offset(y: -100)
-        .navigationTitle(Text("ハッシュタグ追加"))
-        // Try: アラートを表示して、「OK」を押したらAddRecipeHashtagsViewを閉じる
-    }
-```
-
-### レシピ詳細画面に戻った時に、追加したハッシュタグをハッシュタグ枠に表示する
-
-モーダルを閉じても`RecipeDetailView`の`onAppear`は呼ばれないため、モーダルを閉じた時に再度 API リクエストは行われず、追加したハッシュタグはレシピ詳細画面には反映されません（一度レシピ一覧画面に戻ってからもう一度レシピ詳細画面に遷移すると表示されます）。
-
-モーダルを閉じてレシピ詳細画面に戻った時に、追加したハッシュタグをハッシュタグ枠に表示するにはどうすれば良いでしょうか。各自で考えて取り組んでみてください。
+[Chapter 7へ](chapter_07.md)

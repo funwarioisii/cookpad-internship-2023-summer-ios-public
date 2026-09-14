@@ -42,6 +42,9 @@
 		C74251102A13596300074EA0 /* RecipeListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C742510F2A13596300074EA0 /* RecipeListRow.swift */; };
 		C74251122A14C6AC00074EA0 /* RecipeListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74251112A14C6AC00074EA0 /* RecipeListView.swift */; };
 		C74251142A14E9C700074EA0 /* RecipeListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C74251132A14E9C700074EA0 /* RecipeListViewModel.swift */; };
+		202600000000000000000100 /* RecipeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000000 /* RecipeStore.swift */; };
+		202600000000000000000101 /* AddRecipeHashtagsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000001 /* AddRecipeHashtagsViewModel.swift */; };
+		202600000000000000000102 /* RecipeImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202600000000000000000002 /* RecipeImage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -100,6 +103,9 @@
 		C742510F2A13596300074EA0 /* RecipeListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListRow.swift; sourceTree = "<group>"; };
 		C74251112A14C6AC00074EA0 /* RecipeListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListView.swift; sourceTree = "<group>"; };
 		C74251132A14E9C700074EA0 /* RecipeListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListViewModel.swift; sourceTree = "<group>"; };
+		202600000000000000000000 /* RecipeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeStore.swift; sourceTree = "<group>"; };
+		202600000000000000000001 /* AddRecipeHashtagsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRecipeHashtagsViewModel.swift; sourceTree = "<group>"; };
+		202600000000000000000002 /* RecipeImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeImage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -131,6 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				1E36D5D328927D05009DD683 /* AddRecipeHashtagsView.swift */,
+				202600000000000000000001 /* AddRecipeHashtagsViewModel.swift */,
 			);
 			path = AddRecipeHashtags;
 			sourceTree = "<group>";
@@ -212,6 +219,7 @@
 			isa = PBXGroup;
 			children = (
 				1EE1A3C8287EC10E005C11AA /* ProcessInfo+Extension.swift */,
+				202600000000000000000000 /* RecipeStore.swift */,
 			);
 			path = Library;
 			sourceTree = "<group>";
@@ -237,6 +245,7 @@
 		1EE1A3D0287EC737005C11AA /* View */ = {
 			isa = PBXGroup;
 			children = (
+				202600000000000000000002 /* RecipeImage.swift */,
 				1E36D5D228927C5C009DD683 /* AddRecipeHashtags */,
 				1EE1A3D4287EC77A005C11AA /* RecipeDetail */,
 				1EE1A3D3287EC770005C11AA /* RecipeList */,
@@ -461,6 +470,9 @@
 				2AF750352A29E98700E11B8E /* RecipeDetailView.swift in Sources */,
 				1EF732F2287EBA1E00C3AE1D /* GetRecipeDetailRequest.swift in Sources */,
 				1E5FABFC287D563A000C20D9 /* MiniCookpadApp.swift in Sources */,
+				202600000000000000000102 /* RecipeImage.swift in Sources */,
+				202600000000000000000101 /* AddRecipeHashtagsViewModel.swift in Sources */,
+				202600000000000000000100 /* RecipeStore.swift in Sources */,
 				1EFD4C00287ECC9000B8EB61 /* RecipeDetailItem.swift in Sources */,
 				C74251142A14E9C700074EA0 /* RecipeListViewModel.swift in Sources */,
 				2AF750332A29E95800E11B8E /* RecipeDetailViewModel.swift in Sources */,
@@ -553,7 +565,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -607,7 +619,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -632,7 +644,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -641,7 +653,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.cookpad.MiniCookpad;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -661,7 +676,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -670,7 +685,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.cookpad.MiniCookpad;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -683,12 +701,15 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cookpad.MiniCookpadTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MiniCookpad.app/MiniCookpad";
 			};
@@ -702,12 +723,15 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cookpad.MiniCookpadTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MiniCookpad.app/MiniCookpad";
 			};
@@ -724,7 +748,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.cookpad.MiniCookpadUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = MiniCookpad;
 			};
@@ -741,7 +768,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.cookpad.MiniCookpadUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = MiniCookpad;
 			};

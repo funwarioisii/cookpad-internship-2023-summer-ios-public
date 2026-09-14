@@ -1,28 +1,55 @@
 import SwiftUI
 
 struct RecipeListView: View {
-    @StateObject private var viewModel = RecipeListViewModel()
+    @State private var viewModel: RecipeListViewModel
+
+    init(store: RecipeStore) {
+        _viewModel = State(initialValue: RecipeListViewModel(store: store))
+    }
 
     var body: some View {
         List(viewModel.items) { item in
-            NavigationLink {
-                RecipeDetailView(viewModel: .init(recipeID: item.recipe.id))
-            } label: {
+            NavigationLink(value: item.id) {
                 RecipeListRow(item: item)
             }
+            .accessibilityIdentifier("recipeRow-\(item.id)")
         }
         .listStyle(.plain)
-        .task {
-            await viewModel.request()
+        .overlay {
+            if viewModel.items.isEmpty {
+                if viewModel.isLoading {
+                    ProgressView("読み込み中")
+                } else if let message = viewModel.errorMessage {
+                    ContentUnavailableView("取得できませんでした", systemImage: "wifi.exclamationmark",
+                                           description: Text(message))
+                } else if viewModel.hasLoaded {
+                    ContentUnavailableView("レシピがありません", systemImage: "fork.knife")
+                }
+            }
         }
+        .safeAreaInset(edge: .bottom) {
+            if let message = viewModel.errorMessage {
+                VStack {
+                    Text(message).font(.callout)
+                    Button("再試行") { Task { await viewModel.request() } }
+                        .buttonStyle(.bordered)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(.regularMaterial)
+            }
+        }
+        .task { await viewModel.request() }
+        .refreshable { await viewModel.request() }
         .navigationTitle("レシピ一覧")
+        .navigationDestination(for: Int64.self) { id in
+            RecipeDetailView(recipeID: id, store: viewModel.store)
+        }
     }
 }
 
-struct RecipeListView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationStack {
-            RecipeListView()
-        }
+#Preview {
+    NavigationStack {
+        RecipeListView(store: RecipeStore(client: StubAPIClient()))
     }
 }

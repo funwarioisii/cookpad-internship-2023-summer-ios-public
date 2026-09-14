@@ -1,1 +1,13 @@
-[Documents](Documents/README.md)
+# MiniCookpad — 2026年版
+
+SwiftUIで、レシピ一覧・詳細・ハッシュタグ追加を作る教材です。
+
+**[教材を読む →](Documents/README.md)**
+
+2023年の教材を基に、Observation、Swift 6の並行処理、画面間の状態共有、通信の失敗・キャンセル、Swift Testingを学ぶ構成へ更新しています。完成コードはこのブランチに含まれます。
+
+- Xcode 26.3以上、Swift 6言語モード、iOS 17以上
+- 初期設定はインメモリのサンプルAPI。外部サーバーなしで取得・タグ追加を試せます。
+- 2023年版の途中状態を表す `ch3-initial` などのブランチは、2026年版の途中状態ではありません。
+
+更新の理由と新SDK限定の発展事項は [2026年版の設計](Documents/modernization_2026.md) を参照してください。

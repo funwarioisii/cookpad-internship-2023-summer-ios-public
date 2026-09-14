@@ -1,34 +1,30 @@
 import XCTest
 
-class MiniCookpadUITests: XCTestCase {
-
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
+final class MiniCookpadUITests: XCTestCase {
+    @MainActor
+    func testAddHashtagAndReturnToList() throws {
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
-    func testExample() throws {
-        // UI tests must launch the application that they test.
         let app = XCUIApplication()
+        app.launchEnvironment["USE_STUB_API_CLIENT"] = "1"
         app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-    }
-
-    func testLaunchPerformance() throws {
-        if #available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 7.0, *) {
-            // This measures how long it takes to launch your application.
-            measure(metrics: [XCTApplicationLaunchMetric()]) {
-                XCUIApplication().launch()
-            }
-        }
+        let recipe = app.buttons["recipeRow-1"]
+        XCTAssertTrue(recipe.waitForExistence(timeout: 10))
+        recipe.tap()
+        let add = app.buttons["addHashtags"]
+        XCTAssertTrue(add.waitForExistence(timeout: 10))
+        add.tap()
+        let input = app.descendants(matching: .any)["hashtagsInput"].firstMatch
+        XCTAssertTrue(input.waitForExistence(timeout: 5))
+        input.tap()
+        input.typeText("#UITestTag")
+        app.buttons["saveHashtags"].tap()
+        let tags = app.staticTexts["detailHashtags"]
+        let updated = NSPredicate(format: "label CONTAINS %@", "#UITestTag")
+        expectation(for: updated, evaluatedWith: tags)
+        waitForExpectations(timeout: 10)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let updatedRow = app.buttons["recipeRow-1"]
+        XCTAssertTrue(updatedRow.waitForExistence(timeout: 10))
+        XCTAssertTrue(updatedRow.label.contains("#UITestTag"))
     }
 }

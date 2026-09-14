@@ -1,88 +1,40 @@
-# iOS アプリ開発をはじめよう
+# iOSアプリ開発をはじめよう
 
-まずは、Xcode で
+## 起動
 
-- ソースコードをビルドし、シミュレータで iOS アプリを動かすところ
+1. このリポジトリの2026年版のコードを取得します。
+2. `MiniCookpad.xcodeproj` をXcodeで開きます。
+3. Schemeに `MiniCookpad`、実行先にiOSシミュレーターを選びます。
+4. Run（⌘R）を実行します。レシピ一覧が表示されれば成功です。
 
-までをやってみましょう。
+完成コードを読む教材なので、まず全体の操作を試してから各章で実装を追います。新しくViewを作る際は、File → New → FileからSwiftファイルを作り、MiniCookpadターゲットへ追加してください。
 
-## Fork と Clone
+## Xcodeで見る場所
 
-このリポジトリを Fork して Clone してください。
-作業中の質問に回答する際など、出来ているところまで push してもらう可能性があります。
+- 左側のファイル一覧: View、Entity、Networkingなどの実装を開く。
+- 中央のエディター: コードを編集する。
+- Canvas: `#Preview` の表示を確認する。
+- Debugエリア: コンソールとブレークポイントで状態を確認する。
+- Testナビゲーター: Chapter 7のテストを実行する。
 
-## プロジェクトを開く
+## サンプルAPIと実API
 
-Xcode.app を開きます。
+SchemeのRun → Arguments → Environment Variablesにある `USE_STUB_API_CLIENT` は、初期値が `1` です。`MiniCookpadApp` が `StubAPIClient` を作り、それを `RecipeStore` に渡します。
 
-「Open a project or file」を選択してください
+サンプルAPIは約300ms待って応答し、追加したタグをアプリ起動中だけ記憶します。レシピ本文は同梱JSONから読み、詳細のIDとタイトルは選択した一覧項目に合わせます。同梱JSONの画像にはダミーURLが含まれるため、画像は代替表示になります。実APIの外部画像は通信環境によって取得に失敗する場合があります。
 
-<img src="images/chapter_01/01_xcode_wizard.png" width="80%" />
+`0` にすると `MiniCookpadAPIClient` を使います。レシピAPIは `https://localhost:3001`、タグAPIは `https://localhost:3002` が前提です。サーバー実装・起動手順・証明書の準備はこのiOS教材には含まれません。独自のバックエンドに接続する場合は `Networking/Request` 内のURLも合わせて変更してください。
 
-Fork したプロジェクトのあるフォルダを開いて、MiniCookpad.xcodeproj を選択し、open をクリックします。
+## Previewをネットワークから独立させる
 
-<img src="images/chapter_01/02_select_project.png" />
+```swift
+#Preview {
+    NavigationStack {
+        RecipeListView(store: RecipeStore(client: StubAPIClient()))
+    }
+}
+```
 
-## Xcode の簡単な説明
+プレビューは依存を明示して作ります。実行環境を調べてグローバル変数を差し替える仕組みは不要です。
 
-プロジェクトを開くと、Xcode の画面が開きます。
-
-まず、左のペインから`ContentView.swift`を選択してください。
-
-ソースコードが開くと次のような画面が開きます。
-
-<img src="images/chapter_01/03_xcode_with_instructions.png" />
-
-簡単にそれぞれ説明していきます。
-
-### 1. ナビゲーションエリア
-
-- ファイルツリーの表示、ツリーからファイルを選択してエディタエリアで開く、プロジェクト内検索（`⌘⇧F`）といった機能があります
-
-### 2. エディタエリア
-
-- ソースコードを記述する場所
-
-### 3. キャンバス
-
-- Xcode Previews が表示される場所
-
-### 4. インスペクタエリア
-
-- 主にファイルの情報が表示されたり、SwiftUI 等を編集しているときの UI パーツのパラメータ調整をする場所
-
-### 5. 実行、停止、アプリケーションの選択、実行対象の選択
-
-- ここで実行するアプリケーション、シミュレータを選んで実行、停止ができる。
-
-### 💡 便利なショートカット
-
-[ショートカットリスト](https://github.com/cookpad/cookpad-internship-2019-summer/blob/master/ios/docs/shortcuts.md)に開発をする上で便利なショートカットを載せておくので、Chrome の別タブで開いて必要に応じて見てみてください。
-また、講義資料内では、対応する動作にショートカットがある場合は、(`ショートカットキー`)という表記を付けておきます。
-
-#### 記号
-
-- ⌘: コマンドキー(cmd)
-- ⇧: シフトキー(shift)
-- ⌃: コントロールキー(ctrl)
-- ⌥: オプションキー(opt/alt)
-
-## デバッグ実行をする
-
-ではまずは「デバッグ実行」をしてシミュレータを起動します。
-画面左上のエリアから実行対象として、適当な iPhone のシミュレータを選択してください。
-
-(この画像では iPhone 14 のシミュレータを実行対象にしています)
-
-<img src="images/chapter_01/04_select_xcode_simulator.png" />
-
-選択ができたら「▷」ボタンを押し実行しましょう。（`⌘R`でも可能です）
-「Hello, world!」という文字がシミュレータの画面中心に表示されていれば成功です！
-
-<img src="images/chapter_01/05_xcode_simulator.png" width="80%" />
-
-＊単純にビルドを行いソースコードが正しくコンパイルできるかを実行する場合は、（`⌘B`）でビルドのみを行うことができます。
-
----
-
-[Chapter2 へ進む](chapter_02.md)
+[Chapter 2へ](chapter_02.md)
